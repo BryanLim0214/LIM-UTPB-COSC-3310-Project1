@@ -1,24 +1,22 @@
 /**
- * @auth
- */
-
-import java.util.Arrays;
-
-/**
  * <h1>UInt</h1>
  * Represents an unsigned integer using a boolean array to store the binary representation.
  * Each bit is stored as a boolean value, where true represents 1 and false represents 0.
+ * Supports basic arithmetic, bitwise operations, and binary conversions.
  *
- * @author Tim Fielder
  * @version 1.0 (Sept 30, 2024)
  */
+import java.util.Arrays;
+
 public class UInt {
 
-    // The array representing the bits of the unsigned integer.
+    // Array representing the bits of the unsigned integer.
     protected boolean[] bits;
 
-    // The number of bits used to represent the unsigned integer.
+    // Number of bits used to represent the unsigned integer.
     protected int length;
+
+    // Constructors
 
     /**
      * Constructs a new UInt by cloning an existing UInt object.
@@ -32,32 +30,28 @@ public class UInt {
 
     /**
      * Constructs a new UInt from an integer value.
-     * The integer is converted to its binary representation and stored in the bits array.
+     * Converts the integer to its binary representation and stores it in the bits array.
      *
      * @param i The integer value to convert to a UInt.
      */
     public UInt(int i) {
-        // Determine the number of bits needed to store i in binary format.
-        length = (int)(Math.ceil(Math.log(i)/Math.log(2.0)) + 1);
-        bits = new boolean[length];
+        if (i == 0) {
+            length = 1;
+            bits = new boolean[length];
+            bits[0] = false;
+        } else {
+            length = (int)(Math.ceil(Math.log(i) / Math.log(2.0)) + 1);
+            bits = new boolean[length];
 
-        // Convert the integer to binary and store each bit in the array.
-        for (int b = length-1; b >= 0; b--) {
-            // We use a ternary to decompose the integer into binary digits, starting with the 1s place.
-            bits[b] = i % 2 == 1;
-            // Right shift the integer to process the next bit.
-            i = i >> 1;
-
-            // Deprecated analog method
-            /*int p = 0;
-            while (Math.pow(2, p) < i) {
-                p++;
+            // Populate the bits array with the binary representation of i.
+            for (int b = length - 1; b >= 0; b--) {
+                bits[b] = i % 2 == 1;
+                i = i >> 1;
             }
-            p--;
-            bits[p] = true;
-            i -= Math.pow(2, p);*/
         }
     }
+
+    // Cloning Methods
 
     /**
      * Creates and returns a copy of this UInt object.
@@ -70,7 +64,7 @@ public class UInt {
     }
 
     /**
-     * Creates and returns a copy of the given UInt object.
+     * Creates and returns a copy of the specified UInt object.
      *
      * @param u The UInt object to clone.
      * @return A new UInt object that is a copy of the given object.
@@ -79,28 +73,28 @@ public class UInt {
         return new UInt(u);
     }
 
+    // Conversion Methods
+
     /**
      * Converts this UInt to its integer representation.
      *
      * @return The integer value corresponding to this UInt.
      */
     public int toInt() {
-        int t = 0;
-        // Traverse the bits array to reconstruct the integer value.
+        int result = 0;
         for (int i = 0; i < length; i++) {
-            // Again, using a ternary to now re-construct the int value, starting with the most-significant bit.
-            t = t + (bits[i] ? 1 : 0);
-            // Shift the value left for the next bit.
-            t = t << 1;
+            // Shift each bit to build up the integer result
+            result = result + (bits[i] ? 1 : 0);
+            result = result << 1;
         }
-        return t >> 1; // Adjust for the last shift.
+        return result >> 1; // Final adjustment to shift back
     }
 
     /**
-     * Static method to retrieve the int value from a generic UInt object.
+     * Static method to retrieve the integer value from a generic UInt object.
      *
      * @param u The UInt to convert.
-     * @return The int value represented by u.
+     * @return The integer value represented by u.
      */
     public static int toInt(UInt u) {
         return u.toInt();
@@ -109,42 +103,30 @@ public class UInt {
     /**
      * Returns a String representation of this binary object with a leading 0b.
      *
-     * @return The constructed String.
+     * @return The binary representation as a string.
      */
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder("0b");
-        // Construct the String starting with the most-significant bit.
         for (int i = 0; i < length; i++) {
-            // Again, we use a ternary here to convert from true/false to 1/0
             s.append(bits[i] ? "1" : "0");
         }
         return s.toString();
     }
 
+    // Bitwise Operations
+
     /**
-     * Performs a logical AND operation using this.bits and u.bits, with the result stored in this.bits.
+     * Performs a logical AND operation with this.bits and u.bits, storing the result in this.bits.
      *
-     * @param u The UInt to AND this against.
+     * @param u The UInt to AND with this.
      */
     public void and(UInt u) {
-        // We want to traverse the bits arrays to perform our AND operation.
-        // But keep in mind that the arrays may not be the same length.
-        // So first we use Math.min to determine which is shorter.
-        // Then we need to align the two arrays at the 1s place, which we accomplish by indexing them at length-i-1.
         for (int i = 0; i < Math.min(this.length, u.length); i++) {
-            this.bits[this.length - i - 1] =
-                    this.bits[this.length - i - 1] &
-                            u.bits[u.length - i - 1];
+            this.bits[this.length - i - 1] &= u.bits[u.length - i - 1];
         }
-        // In the specific case that this.length is greater, there are additional elements of
-        //   this.bits that are not getting ANDed against anything.
-        // Depending on the implementation, we may want to treat the operation as implicitly padding
-        //   the u.bits array to match the length of this.bits, in which case what we actually
-        //   perform is simply setting the remaining indices of this.bits to false.
-        // Note that while this logic is helpful for the AND operation if we want to use this
-        //   implementation (implicit padding), it is never necessary for the OR and XOR operations.
         if (this.length > u.length) {
+            // Clear any remaining bits if this length is greater than u's length
             for (int i = u.length; i < this.length; i++) {
                 this.bits[this.length - i - 1] = false;
             }
@@ -152,11 +134,11 @@ public class UInt {
     }
 
     /**
-     * Accepts a pair of UInt objects and uses a temporary clone to safely AND them together (without changing either).
+     * Static method to safely perform an AND operation without modifying operands.
      *
-     * @param a The first UInt
-     * @param b The second UInt
-     * @return The temp object containing the result of the AND op.
+     * @param a The first UInt.
+     * @param b The second UInt.
+     * @return A new UInt object containing the result of the AND operation.
      */
     public static UInt and(UInt a, UInt b) {
         UInt temp = a.clone();
@@ -165,68 +147,255 @@ public class UInt {
     }
 
     public void or(UInt u) {
-        // TODO Complete the bitwise logical OR method
-        return;
+        for (int i = 0; i < Math.min(this.length, u.length); i++) {
+            this.bits[this.length - i - 1] |= u.bits[u.length - i - 1];
+        }
     }
 
     public static UInt or(UInt a, UInt b) {
-        // TODO Complete the static OR method
-        return null;
+        UInt temp = a.clone();
+        temp.or(b);
+        return temp;
     }
 
     public void xor(UInt u) {
-        // TODO Complete the bitwise logical XOR method
-        return;
+        for (int i = 0; i < Math.min(this.length, u.length); i++) {
+            this.bits[this.length - i - 1] ^= u.bits[u.length - i - 1];
+        }
     }
 
     public static UInt xor(UInt a, UInt b) {
-        // TODO Complete the static XOR method
-        return null;
+        UInt temp = a.clone();
+        temp.xor(b);
+        return temp;
     }
 
+    // Arithmetic Operations
+
+    /**
+     * Performs binary addition with padding adjustments based on operand length.
+     *
+     * @param u The UInt to add to this UInt.
+     */
     public void add(UInt u) {
-        // TODO Using a ripple-carry adder, perform addition using a passed UINT object
-        // The result will be stored in this.bits
-        // You will likely need to create a couple of helper methods for this.
-        // Note this one, like the bitwise ops, also needs to be aligned on the 1s place.
-        // Also note this may require increasing the length of this.bits to contain the result.
-        return;
+        int maxLength = Math.max(this.length, u.length);
+        boolean[] paddedA = new boolean[maxLength];
+        boolean[] paddedB = new boolean[maxLength];
+
+        // Zero-pad this.bits and u.bits for addition
+        Arrays.fill(paddedA, 0, maxLength - this.length, false);
+        System.arraycopy(this.bits, 0, paddedA, maxLength - this.length, this.length);
+
+        Arrays.fill(paddedB, 0, maxLength - u.length, false);
+        System.arraycopy(u.bits, 0, paddedB, maxLength - u.length, u.length);
+
+        boolean carry = false; // Keeps track of any carry during addition
+        boolean[] result = new boolean[maxLength];
+        for (int i = maxLength - 1; i >= 0; i--) {
+            // Calculate sum with carry for each bit position
+            result[i] = paddedA[i] ^ paddedB[i] ^ carry;
+            carry = (paddedA[i] && paddedB[i]) || (carry && (paddedA[i] || paddedB[i]));
+        }
+
+        // Handle overflow if carry is true
+        if (carry) {
+            boolean[] extendedResult = new boolean[maxLength + 1];
+            System.arraycopy(result, 0, extendedResult, 1, maxLength);
+            extendedResult[0] = true;
+            result = extendedResult;
+        }
+
+        this.bits = result;
+        this.length = result.length;
+    }
+
+    /**
+     * Adds a UInt to this UInt, allowing for sign extension if negative padding is required.
+     *
+     * @param u The UInt to add, supporting negative padding for signed addition.
+     */
+    private void addWithNegative(UInt u) {
+        int maxLength = Math.max(this.length, u.length);
+        boolean[] paddedA = new boolean[maxLength];
+        boolean[] paddedB = new boolean[maxLength];
+
+        // Extend the leftmost bit if necessary for sign extension
+        Arrays.fill(paddedA, 0, maxLength - this.length, this.length > 1 ? this.bits[0] : false);
+        System.arraycopy(this.bits, 0, paddedA, maxLength - this.length, this.length);
+
+        Arrays.fill(paddedB, 0, maxLength - u.length, u.length > 1 ? u.bits[0] : false);
+        System.arraycopy(u.bits, 0, paddedB, maxLength - u.length, u.length);
+
+        boolean carry = false; // Keeps track of any carry during addition
+        boolean[] result = new boolean[maxLength];
+        for (int i = maxLength - 1; i >= 0; i--) {
+            // Calculate sum with carry for each bit position
+            result[i] = paddedA[i] ^ paddedB[i] ^ carry;
+            carry = (paddedA[i] && paddedB[i]) || (carry && (paddedA[i] || paddedB[i]));
+        }
+
+        this.bits = result;
+        this.length = maxLength;
     }
 
     public static UInt add(UInt a, UInt b) {
-        // TODO A static change-safe version of add, should return a temp UInt object like the bitwise ops.
-        return null;
+        UInt temp = a.clone();
+        temp.add(b);
+        return temp;
     }
 
+    /**
+     * Flips all bits and adds one to this UInt, effectively negating it.
+     */
     public void negate() {
-        // TODO You'll need a way to perform 2's complement negation
-        // The add() method will be helpful with this.
+        // Flip all bits to get the one's complement
+        for (int i = 0; i < length; i++) {
+            bits[i] = !bits[i];
+        }
+        this.add(new UInt(1)); // Add one to complete two's complement negation
     }
 
-    public void sub(UInt u) {
-        // TODO Using negate() and add(), perform in-place subtraction
-        // As this class is supposed to handle only unsigned values,
-        //   if the result of the subtraction operation would be a negative number then it should be coerced to 0.
-        return;
+    /**
+     * Subtracts the provided UInt from this UInt using two's complement.
+     *
+     * @param b The UInt to subtract from this UInt.
+     */
+    public void sub(UInt b) {
+        UInt negatedB = b.clone();
+        negatedB.negate(); // Convert b to its two's complement (negative form)
+        this.addWithNegative(negatedB); // Add the negative of b
+        this.trimLengthForSubtraction(Math.max(this.length, b.length)); // Trim to appropriate length
+    }
+
+    private void trimLengthForSubtraction(int targetLength) {
+        // Trim the length to the target, retaining only the necessary bits
+        if (this.length > targetLength) {
+            this.bits = Arrays.copyOf(this.bits, targetLength);
+            this.length = targetLength;
+        }
     }
 
     public static UInt sub(UInt a, UInt b) {
-        // TODO And a static change-safe version of sub
-        return null;
+        UInt temp = a.clone();
+        temp.sub(b);
+        return temp;
     }
 
+    /**
+     * Multiplies this UInt by another UInt using Booth's algorithm.
+     *
+     * @param u The UInt to multiply by.
+     */
     public void mul(UInt u) {
-        // TODO Using Booth's algorithm, perform multiplication
-        // This one will require that you increase the length of bits, up to a maximum of X+Y.
-        // Having negate() and add() will obviously be useful here.
-        // Also note the Booth's always treats binary values as if they are signed,
-        //   while this class is only intended to use unsigned values.
-        // This means that you may need to pad your bits array with a leading 0 if it's not already long enough.
-        return;
+        // Determine the longer and shorter values
+        UInt M = this.length >= u.length ? this.clone() : u.clone();
+        UInt R = this.length < u.length ? this.clone() : u.clone();
+
+        int maxLength = Math.max(M.length, R.length); // Find the maximum length to determine padding
+        M.padToLength(maxLength); // Pad M to ensure it has the proper length
+        UInt negM = M.clone();
+        negM.negate(); // Get the negative of M
+
+        R.padToLength(maxLength); // Pad R to match length
+
+        // Prepare A and S for Booth's multiplication
+        UInt A = new UInt(0);
+        A.bits = new boolean[maxLength * 2 + 1];
+        System.arraycopy(M.bits, 0, A.bits, 0, maxLength); // Set A to the value of M
+        A.length = maxLength * 2 + 1;
+
+        UInt S = new UInt(0);
+        S.bits = new boolean[maxLength * 2 + 1];
+        System.arraycopy(negM.bits, 0, S.bits, 0, maxLength); // Set S to the negative value of M
+        S.length = maxLength * 2 + 1;
+
+        // Initialize P, which holds the result of each step
+        UInt P = new UInt(0);
+        P.bits = new boolean[maxLength * 2 + 1];
+        System.arraycopy(R.bits, 0, P.bits, maxLength, R.length); // Place R into the lower half of P
+        P.length = maxLength * 2 + 1;
+
+        int shiftCounter = M.length; // Set the counter to M's length
+
+        // Perform the multiplication with Booth's algorithm
+        while (shiftCounter > 0) {
+            String lastTwoBits = P.getLastTwoBits();
+
+            if (lastTwoBits.equals("00")) {
+                // No action, just shift
+                P = rightShift(P);
+            } else if (lastTwoBits.equals("10")) {
+                // Add -M (S) to P and shift
+                P.addWithNegative(S);
+                P = trimLengthForMultiplication(P, A.length); // Trim excess bits after addition
+                P = rightShift(P);
+            } else if (lastTwoBits.equals("01")) {
+                // Add M (A) to P and shift
+                P.add(A);
+                P = trimLengthForMultiplication(P, A.length); // Trim excess bits after addition
+                P = rightShift(P);
+            } else if (lastTwoBits.equals("11")) {
+                // No action, just shift
+                P = rightShift(P);
+            }
+
+            shiftCounter--; // Decrement the counter after each operation
+        }
+
+        // Store the result by removing the two leftmost digits
+        if (P.length > 2) {
+            this.bits = Arrays.copyOfRange(P.bits, 2, P.length);
+            this.length = P.length - 3;
+        } else {
+            this.bits = new boolean[]{false};
+            this.length = 1;
+        }
+    }
+
+    private UInt trimLengthForMultiplication(UInt u, int targetLength) {
+        // Trim the length for multiplication, keeping only the necessary bits
+        if (u.length > targetLength) {
+            u.bits = Arrays.copyOfRange(u.bits, u.length - targetLength, u.length);
+            u.length = targetLength;
+        }
+        return u;
+    }
+
+    // Utility and Helper Methods
+
+    private UInt rightShift(UInt p) {
+        UInt shifted = new UInt(0);
+        shifted.bits = new boolean[p.length];
+        shifted.bits[0] = p.bits[0]; // Preserve the sign bit if shifting for a signed integer
+        System.arraycopy(p.bits, 0, shifted.bits, 1, p.length - 1); // Shift all bits to the right
+        shifted.length = p.length;
+        return shifted;
+    }
+
+    public String getLastTwoBits() {
+        // Returns the last two bits as a string
+        if (length < 2) {
+            return bits[length - 1] ? "1" : "0";
+        }
+        String lastTwoBits = "" + (bits[length - 1] ? "1" : "0") + (bits[length - 2] ? "1" : "0");
+
+        return lastTwoBits.equals("01") ? "10" : lastTwoBits.equals("10") ? "01" : lastTwoBits;
+    }
+
+    private void padToLength(int targetLength) {
+        // Pads the bits array to the target length with leading zeros
+        if (this.length < targetLength) {
+            boolean[] paddedBits = new boolean[targetLength];
+            int padding = targetLength - this.length;
+            System.arraycopy(this.bits, 0, paddedBits, padding, this.length);
+            this.bits = paddedBits;
+            this.length = targetLength;
+        }
     }
 
     public static UInt mul(UInt a, UInt b) {
-        // TODO A static, change-safe version of mul
-        return null;
+        UInt temp = a.clone();
+        temp.mul(b);
+        return temp;
     }
 }
